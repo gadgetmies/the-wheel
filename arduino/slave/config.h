@@ -1,0 +1,106 @@
+#pragma once
+
+#include "features.h"
+#include "types.h"
+
+#define BOARD_FEATURES_L1 (BOARD_FEATURE_ENCODER | BOARD_FEATURE_LED)
+#define BOARD_FEATURES_L2 (BOARD_FEATURE_ENCODER | BOARD_FEATURE_LED)
+#if PCB_VERSION == 3
+#define BOARD_FEATURES_M1 (BOARD_FEATURE_ENCODER | BOARD_FEATURE_LED)
+#define BOARD_FEATURES_M2 (BOARD_FEATURE_ENCODER | BOARD_FEATURE_LED)
+#else
+#define BOARD_FEATURES_M (NO_FEATURES)
+#endif
+#define BOARD_FEATURES_R1 (BOARD_FEATURE_ENCODER | BOARD_FEATURE_BUTTON | BOARD_FEATURE_LED)
+#define BOARD_FEATURES_R2 (BOARD_FEATURE_ENCODER | BOARD_FEATURE_BUTTON | BOARD_FEATURE_LED)
+
+static const byte BOARD_FEATURES[] = {
+  BOARD_FEATURES_L1,
+  BOARD_FEATURES_L2,
+
+#if PCB_VERSION == 3
+  BOARD_FEATURES_M1,
+  BOARD_FEATURES_M2,
+#else
+  BOARD_FEATURES_M,
+#endif
+
+  BOARD_FEATURES_R1,
+  BOARD_FEATURES_R2,
+};
+
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+static const byte LED_COUNTS[] = {
+  4,
+  4,
+#if PCB_VERSION == 3
+  4,
+#endif
+  4,
+  12,
+  12
+};
+#endif
+
+#if PCB_VERSION == 3
+static const int LED_COUNT_L = LED_COUNTS[BOARD_L1] + LED_COUNTS[BOARD_L2];
+static const int LED_COUNT_M = LED_COUNTS[BOARD_M1] + LED_COUNTS[BOARD_M2];
+static const int LED_COUNT_R = LED_COUNTS[BOARD_R1] + LED_COUNTS[BOARD_R2];
+#else
+static const int LED_COUNT_LM = LED_COUNTS[BOARD_L1] + LED_COUNTS[BOARD_L2] + LED_COUNTS[BOARD_M];
+static const int LED_COUNT_R = LED_COUNTS[BOARD_R1] + LED_COUNTS[BOARD_R2];
+#endif
+
+static const byte ENCODER_TYPES[] = {
+  ENCODER_TYPE_ABSOLUTE,
+  ENCODER_TYPE_ABSOLUTE,
+  ENCODER_TYPE_ABSOLUTE,
+#if PCB_VERSION == 3
+  ENCODER_TYPE_ABSOLUTE,
+#endif
+  ENCODER_TYPE_ABSOLUTE,
+  ENCODER_TYPE_ABSOLUTE
+};
+
+static const EncoderDirection ENCODER_DIRECTIONS[] = {
+  ENCODE_DIRECTION_CW,
+  ENCODE_DIRECTION_CW,
+  ENCODE_DIRECTION_CW,
+#if PCB_VERSION == 3
+  ENCODE_DIRECTION_CW,
+#endif
+  ENCODE_DIRECTION_CW,
+  ENCODE_DIRECTION_CW
+};
+
+static const byte ENCODER_POSITION_LIMITS[] = {
+  0, 3,
+  0, 3,
+#if PCB_VERSION == 3
+  0, 3,
+#endif
+  0, 3,
+  0, 11,
+  0, 11
+};
+
+static const bool ENCODER_LOOP[] {
+  false,
+  false,
+#if PCB_VERSION == 3
+  false,
+#endif
+  false,
+  true,
+  true
+};
+
+//#define USART_DEBUG_ENABLED // Disable some LEDs if you enable this. Otherwise you will run out of memory!
+//#define I2C_DEBUG_ENABLED
+//#define PORT_STATE_DEBUG
+//#define INTERRUPT_DEBUG
+//#define ENCODER_PIN_DEBUG
+//#define SKIP_FEATURE_VALIDATION
+//#define USE_DEBUG_LED
+
+#include "feature_validation.h"
