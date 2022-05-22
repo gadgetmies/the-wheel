@@ -8,6 +8,12 @@
 // TODO: this should be fixed in order to be able to use this code as a library
 #include "config.h"
 
+#if PCB_VERSION == 3
+#define LED_BUILTIN_AVAILABLE (BOARD_FEATURES_M2 == NO_FEATURES) // TODO: only disable when R2 uses encoder? (How does the pull-up on the pin affect this need?)
+#else
+#define LED_BUILTIN_AVAILABLE (BOARD_FEATURES_R2 == NO_FEATURES) // TODO: only disable when R2 uses encoder? (How does the pull-up on the pin affect this need?)
+#endif
+
 #ifdef INTERRUPT_DEBUG
 uint8_t interrupter;
 #endif
@@ -18,7 +24,7 @@ inline void togglePin(uint8_t outputPin) {
   digitalWrite(outputPin, !digitalRead(outputPin));
 }
 
-[[gnu::pure]] bool isInRange(int value, int target, int range) {
+inline bool isInRange(int value, int target, int range) {
   return value > target - range && value < target + range;
 }
 
@@ -45,7 +51,7 @@ Slave_::Slave_() {
 void Slave_::setup(ChangeHandler changeHandler) {
   handler = changeHandler;
 
-#ifdef USE_DEBUG_LED
+#if LED_BUILTIN_AVAILABLE
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 #endif
@@ -287,7 +293,7 @@ void Slave_::sendMessageToMaster(SlaveToMasterMessage& message) {
 }
 
 void Slave_::toggleBuiltinLed() {
-#if PCB_VERSION == 3 && defined(USE_DEBUG_LED)
+#if PCB_VERSION == 3 && LED_BUILTIN_AVAILABLE
     togglePin(LED_BUILTIN);
 #endif
 }
@@ -558,7 +564,7 @@ void Slave_::updateTouchStates() {
 #endif
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_BUTTON)
-[[gnu::pure]] ButtonPairStates Slave_::voltageToButtonStates(int voltage) {
+ButtonPairStates Slave_::voltageToButtonStates(int voltage) {
   ButtonPairStates buttonStates;
   bool bothButtonsPressed = isInRange(voltage, BOTH_BUTTONS_VOLTAGE, BUTTON_VOLTAGE_RANGE);
   buttonStates.firstButtonState = bothButtonsPressed || isInRange(voltage, FIRST_BUTTON_VOLTAGE, BUTTON_VOLTAGE_RANGE);
@@ -596,7 +602,7 @@ uint8_t Slave_::getButtonStates() {
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
 
-[[gnu::pure]] uint8_t Slave_::ledCountForChain(Board board) {
+uint8_t Slave_::ledCountForChain(Board board) {
   switch (board) {
     case BOARD_L1:
     case BOARD_L2:
@@ -613,7 +619,7 @@ uint8_t Slave_::getButtonStates() {
   }
 }
 
-[[gnu::pure]] uint8_t Slave_::ledPinForBoard(Board board) {
+uint8_t Slave_::ledPinForBoard(Board board) {
   switch (board) {
     case BOARD_L1:
     case BOARD_L2:
@@ -631,13 +637,10 @@ uint8_t Slave_::getButtonStates() {
 }
 
 void Slave_::initializeLedsForBoard(Board board) {
-  static uint8_t previousLedPin = 0;
   uint8_t ledPin = ledPinForBoard(board);
-  if (ledPin == previousLedPin) return;
   delete leds;
   leds = new Adafruit_NeoPixel(ledCountForChain(board), ledPin, NEO_GRB + NEO_KHZ800);
   leds->begin();
-  previousLedPin = ledPin;
 }
 
 void Slave_::setLedColor(uint16_t position, uint32_t color) {

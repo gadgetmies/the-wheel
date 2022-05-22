@@ -101,6 +101,6 @@ static const bool ENCODER_LOOP[] {
 //#define INTERRUPT_DEBUG
 //#define ENCODER_PIN_DEBUG
 //#define SKIP_FEATURE_VALIDATION
-//#define USE_DEBUG_LED
+#define BOARD_HAS_DEBUG_LED
 
 #include "feature_validation.h"

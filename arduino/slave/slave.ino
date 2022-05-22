@@ -3,18 +3,18 @@
 #include "config.h" // these imports need to be in this order because slave.h uses defs in config.h
 #include "slave.h"
 
-#ifdef USE_DEBUG_LED
+#ifdef BOARD_HAS_DEBUG_LED
 #include <MillisTimer.h>
 #endif
 
 #include "feature_validation.h"
 
-[[gnu::pure]] Board firstBoardInLedChain(Board board) {
+Board firstBoardInLedChain(Board board) {
   return (Board) (board - (board % 2));
 }
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
-[[gnu::pure]] uint32_t colorForPosition(uint8_t position) {
+inline uint32_t colorForPosition(uint8_t position) {
   return position % 4 == 0 ? Slave.ColorHSV(0, UINT8_MAX, 20) :
          position % 4 == 1 ? Slave.ColorHSV(UINT16_MAX / 4, UINT8_MAX, 20) :
          position % 4 == 2 ? Slave.ColorHSV(UINT16_MAX / 4 * 2, UINT8_MAX, 20) :
@@ -83,7 +83,7 @@ void handleChange(Board board, ControlType type, uint8_t input, uint8_t state) {
   }
 }
 
-#ifdef USE_DEBUG_LED
+#ifdef BOARD_HAS_DEBUG_LED
 void blinkBuiltinLed(MillisTimer &timer __attribute__((unused))) {
   Slave.toggleBuiltinLed();
 }
@@ -95,7 +95,7 @@ void setup() {
   Serial.begin(115200);
   #endif
   Slave.setup(handleChange);
-  #ifdef USE_DEBUG_LED
+  #ifdef BOARD_HAS_DEBUG_LED
   blinkTimer.start();
   #endif
 
@@ -107,7 +107,7 @@ void setup() {
 void loop() {
   Slave.update();
 
-  #ifdef USE_DEBUG_LED
+  #ifdef BOARD_HAS_DEBUG_LED
   blinkTimer.run();
   #endif
 }

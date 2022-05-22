@@ -305,4 +305,8 @@ static const uint8_t BUTTON_MATRIX_OUTPUT_PINS[MAX_MATRIX_BOARD_COUNT][MATRIX_OU
 };
 #endif
 
+#if PCB_VERSION == 3
+#define BOARD_HAS_DEBUG_LED
+#endif
+
 extern Slave_ Slave;
