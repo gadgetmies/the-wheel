@@ -1,0 +1,200 @@
+html,
+body,
+#root,
+.App {
+  height: 100%;
+  display: block;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  overflow: hidden;
+}
+
+.App {
+  display: flex;
+  width: 100%;
+}
+
+.palette {
+  min-width: 140px;
+  background-color: gray;
+  overflow-y: scroll;
+  z-index: 2;
+  height: 100%;
+  flex: 0;
+}
+
+.grid {
+  flex: 1;
+  display: flex;
+  background-image: url('./lego.png');
+}
+
+.palette-item {
+  width: 110px;
+  margin: 10px;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid black;
+  text-align: center;
+  cursor: pointer;
+}
+
+.palette-item > img {
+  width: 100%;
+}
+
+.grid-item {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+.palette-item_selected {
+  background-color: #aaa;
+}
+
+.drag-item {
+  border: 2px solid #00ff00;
+  box-sizing: border-box;
+  position: relative;
+  filter: drop-shadow(5px 5px 5px #0005);
+}
+
+.drag-item_invalid {
+  border-color: red;
+}
+
+.remove-item {
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+}
+
+.remove-item:after {
+  content: 'x';
+  background: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: block;
+  text-align: center;
+  margin: 5px;
+  font-family: sans-serif;
+  opacity: 20%;
+  border: 1px solid #000a;
+}
+
+.remove-item:hover:after {
+  opacity: 100%;
+}
+
+.hover-button {
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 3;
+}
+
+.button {
+  border-radius: 4px;
+  padding: 4px;
+  background-color: #555;
+  color: white;
+  margin: 10px;
+  cursor: pointer;
+}
+
+.slider-container {
+  border-radius: 5px;
+  margin: 4px;
+  padding: 4px;
+  background-color: #555;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: flex;
+  flex-direction: row;
+}
+
+.slider-item {
+  margin: 1px;
+  padding: 4px;
+  background-color: #aaa;
+  cursor: pointer;
+}
+
+.slider-item:last-of-type {
+  border-radius: 0 4px 4px 0;
+}
+
+.slider-item:first-of-type {
+  border-radius: 4px 0 0 4px;
+}
+
+.slider-item_active {
+  background-color: #eee;
+}
+
+.connector {
+  border-radius: 50%;
+  border: 2px solid green;
+  width: 10px;
+  height: 10px;
+  position: absolute;
+  background: #0005;
+  cursor: pointer;
+}
+
+.connector_connected {
+  border-color: gray;
+}
+
+.connector_selected {
+  border-color: #00ff00;
+}
+
+.connector_free {
+  border-color: #00aa00;
+}
+
+.connector_unavailable {
+  border-color: red;
+  cursor: not-allowed;
+}
+
+.connections {
+  width: calc(100% + 140px);
+  height: 100%;
+  margin-left: -140px;
+  z-index: 3;
+}
+
+.current-connector {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+}
+
+.selected-item {
+  border: 2px solid #00ff00;
+  box-sizing: content-box;
+  margin: -2px;
+  z-index: 2;
+}
+
+.pointer {
+  cursor: pointer;
+}
+
+.properties {
+  display: flex;
+  flex-direction: column;
+}
+
+.property {
+}
