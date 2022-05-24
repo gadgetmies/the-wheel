@@ -640,10 +640,13 @@ uint8_t Slave_::getButtonStates() {
 }
 
 void Slave_::initializeLedsForBoard(Board board) {
+  static uint8_t previousLedPin = 0;
   uint8_t ledPin = ledPinForBoard(board);
+  if (ledPin == previousLedPin) return;
   delete leds;
   leds = new Adafruit_NeoPixel(ledCountForChain(board), ledPin, NEO_GRB + NEO_KHZ800);
   leds->begin();
+  previousLedPin = ledPin;
 }
 
 void Slave_::setLedColor(uint16_t position, uint32_t color) {
