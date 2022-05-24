@@ -139,7 +139,7 @@ void handleControlChange() {
   if (type == CONTROL_TYPE_DEBUG && value == DEBUG_BOOT) {
     saveAddressAsNextChannel(address); // TODO: slaves do not send their address at boot :facepalm:
   }
-  if (type == CONTROL_TYPE_POSITION) {
+  if (type == CONTROL_TYPE_POSITION || type == CONTROL_TYPE_ENCODER) {
     byte channel = findChannelForAddress(address);
     if (channel == ADDRESS_NOT_FOUND) {
       channel = nextAddressIndex;
