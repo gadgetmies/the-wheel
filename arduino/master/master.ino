@@ -86,8 +86,8 @@ void handleControlChange() {
 
   Serial.print("Address: ");
   Serial.print(message.address);
-  Serial.print(", Control: ");
-  Serial.print(message.control);
+  Serial.print(", Input: ");
+  Serial.print(message.input);
   Serial.print(", Type: ");
   Serial.print(message.type);
   Serial.print(", Value: ");
