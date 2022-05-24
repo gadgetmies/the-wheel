@@ -242,6 +242,16 @@ static const uint8_t POT_PINS[] = {
   POTM,
   POTR
 };
+#else
+static const uint8_t POT_PINS[] = {
+  POTL,
+  NOT_POSSIBLE,
+  POTM,
+  NOT_POSSIBLE,
+  POTR,
+  NOT_POSSIBLE
+};
+
 #endif
 
 #if PCB_VERSION != 3
