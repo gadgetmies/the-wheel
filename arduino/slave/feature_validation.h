@@ -66,4 +66,14 @@ static_assert(!HAS_FEATURE(L2, BOARD_FEATURE_ENCODER), "Cannot use ENCODER on L2
 #endif
 #endif
 
+#ifdef USE_DEBUG_LED
+#if PCB_VERSION == 3
+static_assert(!HAS_FEATURE(R2, BOARD_FEATURE_ENCODER), "Cannot use ENCODER on R2 when USE_DEBUG_LED");
+static_assert(!HAS_FEATURE(R1, BOARD_FEATURE_MATRIX), "Cannot use MATRIX on R1 when USE_DEBUG_LED");
+// TODO: add TOUCH when implemented
+#else
+static_assert(false, "USE_DEBUG_LED only available on PCB_VERSION 3");
+#endif
+#endif
+
 #endif
