@@ -299,6 +299,7 @@ void Slave_::toggleBuiltinLed() {
 #endif
 }
 
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
 void Slave_::tickEncoder(Board board) {
   (*(encoders)[board]).tick();
 }
@@ -306,6 +307,7 @@ void Slave_::tickEncoder(Board board) {
 int Slave_::getPosition(Board board) {
   return positions[board];
 }
+#endif
 
 inline void Slave_::setupInterrupts() {
   PCICR |= (1 << PCIE0) | (1 << PCIE1) | (1 << PCIE2);
