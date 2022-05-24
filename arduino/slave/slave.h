@@ -3,6 +3,7 @@
 typedef uint8_t byte;
 #include <pins_arduino.h>
 
+#include "Arduino.h"
 #include "features.h"
 #include "shared.h"
 #include "types.h"
