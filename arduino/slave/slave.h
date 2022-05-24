@@ -77,12 +77,22 @@ private:
   inline uint8_t readPadPin(uint8_t board, uint8_t pin);
   void handleButtonChange(uint8_t input, uint8_t state); // TODO make this customizable
   void handlePositionChange(uint8_t input, uint8_t state); // TODO make this customizable
+  void setEncoderPosition(Board board, byte position);
+  
   uint8_t requestAddress();
   void sendMessageToMaster(SlaveToMasterMessage& message);
+  MasterToSlaveMessage readMessage();
+  
+  static void handleMessageFromMaster();
 
+  Board firstBoardInLedChain(Board board);
+  void setLedPosition(Board board, byte position);
+  void setLedValue(Board board, byte position, byte value);
+  inline void setPositionLedOn(uint8_t position, Board board);
   uint8_t ledCountForBoard(Board board);
   uint8_t ledPinForBoard(Board board);
   uint8_t firstLedIndex(Board board);
+  uint32_t colorForPosition(uint8_t position);
 
   #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_BUTTON)
   ButtonPairStates voltageToButtonStates(int voltage);
@@ -314,10 +324,6 @@ static const uint8_t BUTTON_MATRIX_OUTPUT_PINS[MAX_MATRIX_BOARD_COUNT][MATRIX_OU
     SWR
   }
 };
-#endif
-
-#if PCB_VERSION == 3
-#define BOARD_HAS_DEBUG_LED
 #endif
 
 extern Slave_ Slave;

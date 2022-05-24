@@ -22,5 +22,12 @@ struct SlaveToMasterMessage {
   uint16_t value;
 };
 
+const uint8_t MasterToSlaveMessageSize = 4;
+struct MasterToSlaveMessage {
+  uint8_t input;
+  ControlType type;
+  uint16_t value;
+};
+
 const byte MASTER_ADDRESS = 1;
 const byte ADDRESS_LENGTH = 1;

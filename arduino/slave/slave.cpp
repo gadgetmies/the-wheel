@@ -68,6 +68,10 @@ void Slave_::setup(ChangeHandler changeHandler) {
   switchStates = previousSwitchStates = getButtonStates(); // TODO: construct mask according to enabled buttons
   #endif
   // TODO: initialize touch states
+
+  for (byte i = 0; i <= BOARD_R2; ++i) {
+    setLedPosition(i, 0);
+  }
 }
 
 void Slave_::update() {
@@ -293,6 +297,86 @@ void Slave_::sendMessageToMaster(SlaveToMasterMessage& message) {
   Wire.endTransmission();
 }
 
+[[gnu::pure]] Board Slave_::firstBoardInLedChain(Board board) {
+  return (Board) (board - (board % 2));
+}
+
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+[[gnu::pure]] uint32_t Slave_::colorForPosition(uint8_t position) {
+  return position % 4 == 0 ? Slave.ColorHSV(0, UINT8_MAX, 20) :
+         position % 4 == 1 ? Slave.ColorHSV(UINT16_MAX / 4, UINT8_MAX, 20) :
+         position % 4 == 2 ? Slave.ColorHSV(UINT16_MAX / 4 * 2, UINT8_MAX, 20) :
+                             Slave.ColorHSV(UINT16_MAX / 4 * 3, UINT8_MAX, 20);
+}
+#endif
+
+void Slave_::setLedPosition(Board board, byte position) {
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+  initializeLedsForBoard(board);
+  fillLeds(Color(0, 0, 0), 0, ledCountForChain(board));
+  const Board firstBoard = firstBoardInLedChain(board);
+  setPositionLedOn(getPosition(firstBoard), firstBoard);
+  setPositionLedOn(getPosition(firstBoard+1), firstBoard+1);
+  showLeds();
+#endif
+}
+
+inline void Slave_::setPositionLedOn(uint8_t position, Board board) {
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+  const uint8_t firstIndex = board % 2 == 0 ? 0 : LED_COUNTS[board - 1];
+  setLedColor(position + firstIndex, colorForPosition(position));
+#endif
+}
+
+void Slave_::setLedValue(Board board, byte position, byte value) {
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+  initializeLedsForBoard(board);
+  const Board firstBoard = firstBoardInLedChain(board);
+  setPositionLedOn(getPosition(firstBoard), firstBoard);
+  setPositionLedOn(getPosition(firstBoard+1), firstBoard+1);
+  showLeds();
+#endif
+}
+
+
+MasterToSlaveMessage Slave_::readMessage() {
+  byte input = Wire.read();
+  byte type = Wire.read();
+  byte valueHighByte = Wire.read();
+  byte valueLowByte = Wire.read();
+
+  MasterToSlaveMessage message = {input, type, word(valueHighByte, valueLowByte)};
+  return message;
+}
+
+void Slave_::setEncoderPosition(Board board, byte position) {
+  (*(encoders)[board]).setPosition(position);
+}
+
+void Slave_::handleMessageFromMaster() {
+  Slave.toggleBuiltinLed();
+
+  MasterToSlaveMessage message = Slave.readMessage();
+  const uint16_t value = message.value;
+  const ControlType type = message.type;
+  const uint8_t input = message.input;
+
+  if (type == CONTROL_TYPE_POSITION || type == CONTROL_TYPE_POSITION) {
+    if (BOARD_FEATURES[input] & BOARD_FEATURE_ENCODER) {
+      // TODO: apply limits
+      Slave.setEncoderPosition((Board) input, value);
+      Slave.setLedPosition((Board) input, value);
+    }
+  }
+
+  if (type == CONTROL_TYPE_BUTTON) {
+    if (BOARD_FEATURES[input] & BOARD_FEATURE_PADS) {
+      // TODO: implement value handling (perhaps high byte for pad number and low byte for color?)
+      Slave.setLedValue((Board) input, value, 0);
+    }
+  }
+}
+
 void Slave_::toggleBuiltinLed() {
 #if PCB_VERSION == 3 && defined(USE_DEBUG_LED)
     togglePin(LED_BUILTIN);
@@ -508,6 +592,8 @@ inline void Slave_::setupI2c() {
     Wire.begin(address);
     sendMessageToMaster(DEBUG_BOOT, 1, CONTROL_TYPE_DEBUG);
   }
+
+  Wire.onReceive(handleMessageFromMaster);
 
   #ifdef USART_DEBUG_ENABLED
   Serial.println("Done");

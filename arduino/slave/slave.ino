@@ -9,37 +9,6 @@
 
 #include "feature_validation.h"
 
-Board firstBoardInLedChain(Board board) {
-  return (Board) (board - (board % 2));
-}
-
-#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
-inline uint32_t colorForPosition(uint8_t position) {
-  return position % 4 == 0 ? Slave.ColorHSV(0, UINT8_MAX, 20) :
-         position % 4 == 1 ? Slave.ColorHSV(UINT16_MAX / 4, UINT8_MAX, 20) :
-         position % 4 == 2 ? Slave.ColorHSV(UINT16_MAX / 4 * 2, UINT8_MAX, 20) :
-                             Slave.ColorHSV(UINT16_MAX / 4 * 3, UINT8_MAX, 20);
-}
-#endif
-
-inline void setPositionLedOn(uint8_t position, Board board) {
-#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
-  const uint8_t firstIndex = board % 2 == 0 ? 0 : LED_COUNTS[board - 1];
-  Slave.setLedColor(position + firstIndex, colorForPosition(position));
-#endif
-}
-
-void setLedPosition(Board board, byte position) {
-#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
-  Slave.initializeLedsForBoard(board);
-  Slave.fillLeds(Slave.Color(0, 0, 0), 0, Slave.ledCountForChain(board));
-  const Board firstBoard = firstBoardInLedChain(board);
-  setPositionLedOn(Slave.getPosition(firstBoard), firstBoard);
-  setPositionLedOn(Slave.getPosition(firstBoard+1), firstBoard+1);
-  Slave.showLeds();
-#endif
-}
-
 void sendChangeMessage(byte input, uint16_t value, ControlType type) {
   Slave.toggleBuiltinLed();
   Slave.sendMessageToMaster(input, value, type);
@@ -58,7 +27,6 @@ void handleChange(Board board, ControlType type, uint8_t input, uint8_t state) {
         Serial.println(state);
       #endif
       sendChangeMessage(board, state, type);
-      setLedPosition(board, state);
 
       break;
     }
@@ -98,10 +66,6 @@ void setup() {
   #ifdef USE_DEBUG_LED
   blinkTimer.start();
   #endif
-
-  for (byte i = 0; i <= BOARD_R2; ++i) {
-    setLedPosition(i, 0);
-  }
 }
 
 void loop() {
