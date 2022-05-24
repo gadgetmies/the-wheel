@@ -51,7 +51,7 @@ Slave_::Slave_() {
 void Slave_::setup(ChangeHandler changeHandler) {
   handler = changeHandler;
 
-#if LED_BUILTIN_AVAILABLE
+#ifdef USE_DEBUG_LED
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, HIGH);
 #endif
@@ -293,7 +293,7 @@ void Slave_::sendMessageToMaster(SlaveToMasterMessage& message) {
 }
 
 void Slave_::toggleBuiltinLed() {
-#if PCB_VERSION == 3 && LED_BUILTIN_AVAILABLE
+#if PCB_VERSION == 3 && defined(USE_DEBUG_LED)
     togglePin(LED_BUILTIN);
 #endif
 }

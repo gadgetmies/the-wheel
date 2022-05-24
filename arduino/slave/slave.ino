@@ -3,7 +3,7 @@
 #include "config.h" // these imports need to be in this order because slave.h uses defs in config.h
 #include "slave.h"
 
-#ifdef BOARD_HAS_DEBUG_LED
+#ifdef USE_DEBUG_LED
 #include <MillisTimer.h>
 #endif
 
@@ -83,7 +83,7 @@ void handleChange(Board board, ControlType type, uint8_t input, uint8_t state) {
   }
 }
 
-#ifdef BOARD_HAS_DEBUG_LED
+#ifdef USE_DEBUG_LED
 void blinkBuiltinLed(MillisTimer &timer __attribute__((unused))) {
   Slave.toggleBuiltinLed();
 }
@@ -95,7 +95,7 @@ void setup() {
   Serial.begin(115200);
   #endif
   Slave.setup(handleChange);
-  #ifdef BOARD_HAS_DEBUG_LED
+  #ifdef USE_DEBUG_LED
   blinkTimer.start();
   #endif
 
@@ -107,7 +107,7 @@ void setup() {
 void loop() {
   Slave.update();
 
-  #ifdef BOARD_HAS_DEBUG_LED
+  #ifdef USE_DEBUG_LED
   blinkTimer.run();
   #endif
 }
