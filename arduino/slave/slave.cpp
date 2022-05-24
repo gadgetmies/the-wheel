@@ -204,6 +204,8 @@ void Slave_::update() {
   }
 #endif
 
+#endif // PCB_VERSION != 3
+
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_POT)
   for (int i = 0; i < BOARD_COUNT; ++i) {
       int position;
@@ -220,9 +222,7 @@ void Slave_::update() {
         handler((Board)i, CONTROL_TYPE_POSITION, 0, position);
       }
     }
-  }
 #endif
-#endif // PCB_VERSION != 3
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
   for (int i = 0; i < BOARD_COUNT; ++i) {
