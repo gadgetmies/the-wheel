@@ -567,7 +567,7 @@ void Slave_::updateTouchStates() {
 #endif
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_BUTTON)
-ButtonPairStates Slave_::voltageToButtonStates(int voltage) {
+[[gnu::pure]] ButtonPairStates Slave_::voltageToButtonStates(int voltage) {
   ButtonPairStates buttonStates;
   bool bothButtonsPressed = isInRange(voltage, BOTH_BUTTONS_VOLTAGE, BUTTON_VOLTAGE_RANGE);
   buttonStates.firstButtonState = bothButtonsPressed || isInRange(voltage, FIRST_BUTTON_VOLTAGE, BUTTON_VOLTAGE_RANGE);
@@ -605,7 +605,7 @@ uint8_t Slave_::getButtonStates() {
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
 
-uint8_t Slave_::ledCountForChain(Board board) {
+[[gnu::pure]] uint8_t Slave_::ledCountForChain(Board board) {
   switch (board) {
     case BOARD_L1:
     case BOARD_L2:
@@ -622,7 +622,7 @@ uint8_t Slave_::ledCountForChain(Board board) {
   }
 }
 
-uint8_t Slave_::ledPinForBoard(Board board) {
+[[gnu::pure]] uint8_t Slave_::ledPinForBoard(Board board) {
   switch (board) {
     case BOARD_L1:
     case BOARD_L2:
