@@ -52,10 +52,15 @@ void setup() {
   digitalWrite(I2C_TX_LED_PIN, HIGH);
 }
 
+uint8_t loopCounter = 0;
 uint8_t slaveAddress = 0;
 void loop() {
   delay(100);
   Serial.print(".");
+  loopCounter++;
+  if (loopCounter % 50 == 0) {
+    Serial.println();
+  }
   midiEventPacket_t rx = MidiUSB.read();
 
   if (rx.header != 0) {
