@@ -52,9 +52,21 @@ void setup() {
   digitalWrite(I2C_TX_LED_PIN, HIGH);
 }
 
+uint8_t slaveAddress = 0;
 void loop() {
   delay(100);
   Serial.print(".");
+  midiEventPacket_t rx = MidiUSB.read();
+
+  if (rx.header != 0) {
+    uint8_t slaveAddress = rx.byte1 & 0xF;
+    ControlType type = rx.header == 0x9 || rx.header == 0x8 ? CONTROL_TYPE_BUTTON : CONTROL_TYPE_POSITION;
+    MasterToSlaveMessage message = {rx.byte2, type, byte3};
+    Wire.beginTransmission(slaveAddress);
+    byte data[] = {message.input, (byte)message.type, highByte(message.value), lowByte(message.value)};
+    Wire.write(data, SlaveToMasterMessageSize);
+    Wire.endTransmission();
+  }
 }
 
 void printChannels() {
@@ -145,7 +157,7 @@ void handleControlChange() {
       channel = nextAddressIndex;
       saveAddressAsNextChannel(address);
     }
-    controlChange(channel, control, value == 1 ? 1 : 127);
+    controlChange(channel, input, value == 1 ? 1 : 127);
   }
   if (type == CONTROL_TYPE_BUTTON) {
     byte channel = findChannelForAddress(address);
@@ -155,9 +167,9 @@ void handleControlChange() {
     }
 
     if (value == 1) {
-      noteOn(channel, control, 127);
+      noteOn(channel, input, 127);
     } else {
-      noteOff(channel, control, 0);
+      noteOff(channel, input, 0);
     }
   }
 }
