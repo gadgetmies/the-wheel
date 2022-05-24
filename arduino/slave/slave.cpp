@@ -216,6 +216,7 @@ void Slave_::update() {
       }
 
       if (positionChanged) {
+        positions[i] = position;
         handler((Board)i, CONTROL_TYPE_POSITION, 0, position);
       }
     }
