@@ -79,9 +79,9 @@ const items = [
     height: 3,
     src: { 0: controller0, 90: controller90, 180: controller180, 270: controller270 },
     connectors: [
-      { available: true, position: { left: 0, top: 80 }, accepts: 'any' },
-      { available: true, position: { right: 0, top: 20 }, accepts: 'any' },
-      { available: true, position: { right: 0, top: 80 }, accepts: 'any' },
+      { available: true, position: { right: 0, top: 24 }, accepts: 'any' },
+      { available: true, position: { right: 0, top: 76 }, accepts: 'any' },
+      { available: true, position: { left: 0, top: 76 }, accepts: 'any' },
     ],
     properties: [{ id: 'config', name: 'Configuration', type: 'copy', value: '', label: 'Copy config' }],
     orientations: [0, 90, 180, 270],
