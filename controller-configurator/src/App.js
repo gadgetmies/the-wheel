@@ -48,13 +48,26 @@ const useMousePosition = () => {
   return mousePosition
 }
 
-const commonProperties = [
-  { id: 'max', name: 'Maximum value', type: 'number', min: 1, max: 255, value: 255 },
-  { id: 'max', name: 'Minimum value', type: 'number', min: 0, max: 254, value: 0 },
-  { id: 'reverse', name: 'Reverse', type: 'boolean', value: false },
+const commonProperties = []
+const mappingProperties = [
+  { id: 'min', name: 'Minimum value', type: 'number', min: 1, max: 255, value: 0 },
+  { id: 'max', name: 'Maximum value', type: 'number', min: 0, max: 254, value: 255 },
+  {
+    id: 'direction',
+    name: 'Direction',
+    type: 'select',
+    value: 'clockwise',
+    values: ['clockwise', 'counter clockwise'],
+  },
 ]
 
-const encoderProperties = commonProperties
+const encoderProperties = [
+  ...commonProperties,
+  ...mappingProperties,
+  { id: 'type', name: 'Type', type: 'select', values: ['absolute', 'relative'], value: 'relative' },
+  { id: 'loop', name: 'Loop', type: 'boolean', value: false },
+]
+
 const analogProperties = commonProperties
 
 const items = [
@@ -69,7 +82,7 @@ const items = [
       { available: true, position: { right: 0, top: 20 }, accepts: 'any' },
       { available: true, position: { right: 0, top: 80 }, accepts: 'any' },
     ],
-    properties: [{ id: 'address', name: 'Address', type: 'text' }],
+    properties: [{ id: 'config', name: 'Configuration', type: 'copy', value: '', label: 'Copy config' }],
     orientations: [0, 90, 180, 270],
   },
   {
