@@ -223,22 +223,124 @@ const canConnect = (i1, connector1, i2, connector2) => {
 
 const ESCAPE_KEYS = ['27', 'Escape']
 
-function PropertiesPanel(selectedItem) {
+const updateItemProperty = (item, propertyId, value, designItems, setDesignItems, setSelectedItem) => {
+  const newItems = structuredClone(designItems)
+  const itemIndex = designItems.indexOf(item)
+  newItems[itemIndex].properties.find(({ id }) => id === propertyId).value = value
+  setDesignItems(newItems)
+  setSelectedItem(newItems[itemIndex])
+}
+
+function PropertiesPanel(selectedItem, designItems, setDesignItems, setSelectedItem) {
   return (
     <div>
       <h3>Properties</h3>
       {selectedItem && (
         <>
           <div>Type: {selectedItem.name}</div>
+          <br />
           <div className={'properties'}>
             {selectedItem?.properties?.map(({ name, type, id, ...props }) => (
-              <label className={'property'}>
-                {name}:
-                {type === 'number' && <input type="number" min={props.min} max={props.max} value={props.value} />}
-                {type === 'color' && <input type="text" maxLength={7} value={props.value} />}
-                {type === 'text' && <input type="text" value={props.value} />}
-                {type === 'boolean' && <input type="checkbox" checked={props.value} />}
-              </label>
+              <>
+                <label className={'property'}>
+                  {name}:<br />
+                  {type === 'number' && (
+                    <input
+                      name={id}
+                      type="number"
+                      min={props.min}
+                      max={props.max}
+                      value={props.value}
+                      onChange={(e) => {
+                        updateItemProperty(
+                          selectedItem,
+                          id,
+                          parseInt(e.target.value),
+                          designItems,
+                          setDesignItems,
+                          setSelectedItem
+                        )
+                      }}
+                    />
+                  )}
+                  {type === 'color' && (
+                    <input
+                      name={id}
+                      type="text"
+                      maxLength={7}
+                      value={props.value}
+                      onChange={(e) => {
+                        updateItemProperty(
+                          selectedItem,
+                          id,
+                          e.target.value,
+                          designItems,
+                          setDesignItems,
+                          setSelectedItem
+                        )
+                      }}
+                    />
+                  )}
+                  {type === 'text' && (
+                    <input
+                      name={id}
+                      type="text"
+                      value={props.value}
+                      onChange={(e) => {
+                        updateItemProperty(
+                          selectedItem,
+                          id,
+                          e.target.value,
+                          designItems,
+                          setDesignItems,
+                          setSelectedItem
+                        )
+                      }}
+                    />
+                  )}
+                  {type === 'boolean' && (
+                    <input
+                      name={id}
+                      type="checkbox"
+                      checked={props.value}
+                      onChange={(e) => {
+                        updateItemProperty(
+                          selectedItem,
+                          id,
+                          e.target.checked,
+                          designItems,
+                          setDesignItems,
+                          setSelectedItem
+                        )
+                      }}
+                    />
+                  )}
+                  {type === 'select' && (
+                    <select
+                      name={id}
+                      value={props.value}
+                      onChange={(e) => {
+                        updateItemProperty(
+                          selectedItem,
+                          id,
+                          e.target.value,
+                          designItems,
+                          setDesignItems,
+                          setSelectedItem
+                        )
+                      }}
+                    >
+                      {props.values.map((value) => (
+                        <option>{value}</option>
+                      ))}
+                    </select>
+                  )}
+                  {type === 'copy' && (
+                    <button onClick={() => navigator.clipboard.writeText(props.value)}>{props.label}</button>
+                  )}
+                </label>
+                <br />
+              </>
             ))}
           </div>
         </>
@@ -466,7 +568,7 @@ function App() {
     <div className="App">
       <div className="palette">
         {currentView === 'components' && ComponentPalette(currentView, dragItem, setDragItem)}
-        {currentView === 'properties' && PropertiesPanel(selectedItem)}
+        {currentView === 'properties' && PropertiesPanel(selectedItem, designItems, setDesignItems, setSelectedItem)}
       </div>
       {currentView === 'connections' && selectedConnector && CurrentConnector(selectedConnectorPosition, x, y)}
       <div
