@@ -529,7 +529,137 @@ function updateAvailability(allItems, items, connectors, level = 1) {
   }
 }
 
-function generateConfig(controller) {}
+function getBoardFeaturesForId(id) {
+  switch (id) {
+    case 'encoder':
+      return 'BOARD_FEATURE_ENCODER'
+    case 'encoder_w_leds':
+      return 'BOARD_FEATURE_ENCODER | BOARD_FEATURE_LED'
+    case 'pot':
+    case 'slider':
+    case 'crossfader':
+      return 'BOARD_FEATURE_POT'
+    case 'pad':
+      return 'BOARD_FEATURE_PADS | BOARD_FEATURE_LED'
+  }
+}
+
+const connectorOrder = ['L', 'M', 'R']
+const componentsWithLEDs = ['encoder_w_leds', 'pad']
+
+const getBoards = (controller, items) => {
+  let boards = {
+    L1: undefined,
+    L2: undefined,
+    M1: undefined,
+    M2: undefined,
+    R1: undefined,
+    R2: undefined,
+  }
+  controller.connectors.forEach((connector, i) => {
+    if (!connector.to) return
+    const item = items[connector.to.item]
+    boards[`${connectorOrder[i]}1`] = item
+
+    item.connectors
+      .filter(({ accepts }) => accepts)
+      .forEach((connector, i) => {
+        if (!connector.to) return
+        const targetItem = items[connector.to.item]
+        boards[`${connectorOrder[i]}2`] = targetItem
+      })
+  })
+
+  return boards
+}
+
+const getPropertyValue = (item, propertyId) => item.properties.find(({ id }) => id === propertyId).value
+
+function generateConfig(controller, items) {
+  const boards = getBoards(controller, items)
+  const features = Object.keys(boards).map((boardKey) => {
+    const board = boards[boardKey]
+    return `#define BOARD_FEATURES_${boardKey} (${board ? getBoardFeaturesForId(board.id) : 'NO_FEATURES'})`
+  })
+
+  const ledConfig = Object.values(boards).map((board) =>
+    board && componentsWithLEDs.includes(board.id) ? getPropertyValue(board, 'ledCount') : 0
+  )
+
+  const encoderTypeConfig = Object.values(boards).map((board) =>
+    board && board.type === 'encoder'
+      ? getPropertyValue(board, 'type') === 'relative'
+        ? 'ENCODER_TYPE_RELATIVE'
+        : 'ENCODER_TYPE_ABSOLUTE'
+      : 'ENCODER_TYPE_RELATIVE'
+  )
+
+  const encoderDirectionConfig = Object.values(boards).map((board) =>
+    board && board.type === 'encoder'
+      ? getPropertyValue(board, 'direction') === 'clockwise'
+        ? 'ENCODE_DIRECTION_CW'
+        : 'ENCODE_DIRECTION_CCW'
+      : 'ENCODE_DIRECTION_CW'
+  )
+
+  const encoderLimitsConfig = Object.values(boards).map((board) =>
+    board && board.type === 'encoder' ? `${getPropertyValue(board, 'min')}, ${getPropertyValue(board, 'max')}` : '0,0'
+  )
+
+  const encoderLoopConfig = Object.values(boards).map((board) =>
+    board && board.type === 'encoder' ? getPropertyValue(board, 'loop').toString() : 'false'
+  )
+
+  return `\
+#pragma once
+
+#include "features.h"
+#include "types.h"
+
+${features.join('\n')}
+  
+static const byte BOARD_FEATURES[] = {
+  BOARD_FEATURES_L1,
+  BOARD_FEATURES_L2,
+  BOARD_FEATURES_M1,
+  BOARD_FEATURES_M2,
+  BOARD_FEATURES_R1,
+  BOARD_FEATURES_R2,
+};
+
+${
+  ledConfig.every((i) => i === 0)
+    ? ''
+    : `\
+static const byte LED_COUNTS[] = {
+${ledConfig.join(',\n')}
+};
+
+static const int LED_COUNT_L = LED_COUNTS[BOARD_L1] + LED_COUNTS[BOARD_L2];
+static const int LED_COUNT_M = LED_COUNTS[BOARD_M1] + LED_COUNTS[BOARD_M2];
+static const int LED_COUNT_R = LED_COUNTS[BOARD_R1] + LED_COUNTS[BOARD_R2];
+`
+}
+
+static const byte ENCODER_TYPES[] = {
+${encoderTypeConfig.join(',\n')}
+};
+
+static const EncoderDirection ENCODER_DIRECTIONS[] = {
+${encoderDirectionConfig.join(',\n')}
+};
+
+static const byte ENCODER_POSITION_LIMITS[] = {
+${encoderLimitsConfig.join(',\n')}
+};
+
+static const bool ENCODER_LOOP[] {
+${encoderLoopConfig.join(',\n')}
+};
+
+#include "feature_validation.h"
+`
+}
 
 function App() {
   const [dragItem, setDragItem] = useState()
