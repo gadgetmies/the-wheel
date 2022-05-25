@@ -719,10 +719,10 @@ function App() {
           Clear
         </div>
         {ViewSelector(currentView, (currentView) => {
+          setSelectedItem(undefined)
+          setDragItem(undefined)
+          setSelectedConnector(undefined)
           setCurrentView(currentView)
-          if (dragItem) {
-            setDragItem(undefined)
-          }
         })}
         {currentView === 'connections' && Connections(designItems)}
       </div>
