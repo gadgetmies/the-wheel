@@ -72,6 +72,7 @@ const analogProperties = commonProperties
 
 const items = [
   {
+    id: 'controller',
     type: 'controller',
     name: 'Controller',
     width: 4,
