@@ -606,7 +606,15 @@ function App() {
               }`}
               onClick={(e) => {
                 if (currentView === 'properties') {
-                  setSelectedItem(item)
+                  if (selectedItem === item) {
+                    setSelectedItem(undefined)
+                  } else {
+                    if (item.id === 'controller') {
+                      const config = generateConfig(item, designItems)
+                      item.properties.find(({ id }) => id === 'config').value = config
+                    }
+                    setSelectedItem(item)
+                  }
                 }
                 e.stopPropagation()
               }}
