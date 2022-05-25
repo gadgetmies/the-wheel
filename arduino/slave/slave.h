@@ -56,6 +56,9 @@ public:
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
   void updatePadStates();
 #endif
+#if defined(USART_DEBUG_ENABLED) && defined(INTERRUPT_DEBUG)
+  void setInterrupter(byte i);
+#endif
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
   void initializeLedsForBoard(Board board);
   void setLedColor(uint16_t position, uint32_t color);
@@ -74,16 +77,19 @@ private:
   inline void setupI2c();
   inline void setupPinModes();
   inline void setupInterrupts();
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
   inline uint8_t readPadPin(uint8_t board, uint8_t pin);
+#endif
   void handleButtonChange(uint8_t input, uint8_t state); // TODO make this customizable
   void handlePositionChange(uint8_t input, uint8_t state); // TODO make this customizable
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
   void setEncoderPosition(Board board, byte position);
-  
+#endif  
   uint8_t requestAddress();
   void sendMessageToMaster(SlaveToMasterMessage& message);
   MasterToSlaveMessage readMessage();
   
-  static void handleMessageFromMaster();
+  static void handleMessageFromMaster(int bytes);
 
   Board firstBoardInLedChain(Board board);
   void setLedPosition(Board board, byte position);
@@ -100,6 +106,10 @@ private:
   #endif
 
   ChangeHandler handler;
+
+#ifdef INTERRUPT_DEBUG
+  uint8_t interrupter;
+#endif
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
   uint8_t currentLedPin = 0;
@@ -137,8 +147,17 @@ private:
   #endif
 
   #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
-  uint8_t padStates[3];
-  uint8_t previousPadStates[3];
+  uint8_t padStates[3] = {
+    0b00001111,
+    0b00001111,
+    0b00001111
+  };
+
+  uint8_t previousPadStates[3] = {
+    0b00001111,
+    0b00001111,
+    0b00001111
+  };
   #endif
 
   #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
@@ -276,12 +295,21 @@ static const uint8_t TOUCH_PINS[] = {
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
 #if PCB_VERSION != 3
-static const uint8_t PAD_PINS[][4] {
+static const uint8_t PAD_PINS[][BOARD_COUNT] {
   {ENCL2A, ENCL1B, ENCL1A, SWL},
   {},
   {TOUCH, ENC1B, ENC1A, SWM}, // TODO: check version 3
   {ENCR1B, ENCR1A, ENCR2A, SWR}
 };
+#else
+static const uint8_t PAD_PINS[][BOARD_COUNT] {
+  {ENCL1A, ENCL1B, ENCL2B, ENCL2A},
+  {},
+  {ENCM1A, ENCM1B, ENCM2B, ENCM2A},
+  {},
+  {ENCR1A, ENCR1B, ENCR2B, ENCR2A}
+};
+
 #endif
 #endif
 

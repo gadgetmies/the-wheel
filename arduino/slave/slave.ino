@@ -27,6 +27,7 @@ void handleChange(Board board, ControlType type, uint8_t input, uint8_t state) {
         Serial.println(state);
       #endif
       sendChangeMessage(board, state, type);
+      //setLedPosition(board, state);
 
       break;
     }
@@ -45,6 +46,7 @@ void handleChange(Board board, ControlType type, uint8_t input, uint8_t state) {
 //      handleButtonChange(i, (switchStates & switchMask) ? 0 : 1);
 //      handleButtonChange(i, pinState);
       sendChangeMessage(board * 20 + input, state, type);
+      break;
     }
     default:
       sendChangeMessage(board, state, type);

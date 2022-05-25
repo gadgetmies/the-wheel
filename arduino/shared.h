@@ -11,7 +11,8 @@ enum ControlType {
 
 enum DebugMessage {
   DEBUG_BOOT,
-  DEBUG_RECEIVED_ADDRESS
+  DEBUG_RECEIVED_ADDRESS,
+  DEBUG_VALUE
 };
 
 const uint8_t SlaveToMasterMessageSize = 5;

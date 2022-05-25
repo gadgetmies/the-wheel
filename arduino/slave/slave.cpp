@@ -8,16 +8,6 @@
 // TODO: this should be fixed in order to be able to use this code as a library
 #include "config.h"
 
-#if PCB_VERSION == 3
-#define LED_BUILTIN_AVAILABLE (BOARD_FEATURES_M2 == NO_FEATURES) // TODO: only disable when R2 uses encoder? (How does the pull-up on the pin affect this need?)
-#else
-#define LED_BUILTIN_AVAILABLE (BOARD_FEATURES_R2 == NO_FEATURES) // TODO: only disable when R2 uses encoder? (How does the pull-up on the pin affect this need?)
-#endif
-
-#ifdef INTERRUPT_DEBUG
-uint8_t interrupter;
-#endif
-
 void(* reset) (void) = 0;
 
 inline void togglePin(uint8_t outputPin) {
@@ -28,21 +18,7 @@ inline void togglePin(uint8_t outputPin) {
   return value > target - range && value < target + range;
 }
 
-Slave_::Slave_() {
-  #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
-  padStates = {
-    0b00001111,
-    0b00001111,
-    0b00001111
-  };
-
-  previousPadStates = {
-    0b00001111,
-    0b00001111,
-    0b00001111
-  };
-  #endif
-
+Slave_::Slave_() {                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
   #ifdef INTERRUPT_DEBUG
   interrupter = 255;
   #endif
@@ -69,9 +45,15 @@ void Slave_::setup(ChangeHandler changeHandler) {
   #endif
   // TODO: initialize touch states
 
+  #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
   for (byte i = 0; i <= BOARD_R2; ++i) {
-    setLedPosition(i, 0);
+    #ifdef USART_DEBUG_ENABLED
+    Serial.print("L");
+    #endif
+    
+    setLedPosition((Board) i, 0);
   }
+  #endif
 }
 
 void Slave_::update() {
@@ -177,38 +159,51 @@ void Slave_::update() {
     }
   }
 #endif
+#endif // PCB_VERSION != 3
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
-  for (uint8_t board = 0; board < 3; board++) {
-    const uint8_t padStateIndex = board - 1;
-    const uint8_t boardPadStates = padStates[padStateIndex];
-    const uint8_t previousBoardPadStates = previousPadStates[padStateIndex];
-    if (previousBoardPadStates != boardPadStates) {
-      #ifdef USART_DEBUG_ENABLED
-      Serial.print("B: ");
-      Serial.println(board);
+/*#if defined(USART_DEBUG_ENABLED) && defined(INTERRUPT_DEBUG)
+    if (interrupter != 255) {
+      Serial.print("Int: ");
+      Serial.println(interrupter);
+      interrupter = 255;
+    }
+#endif*/
+  for (uint8_t board = BOARD_L1; board <= BOARD_R1; ++board) {
+    if (BOARD_FEATURES[board] & BOARD_FEATURE_PADS) {
+      #if PCB_VERSION != 3
+      const uint8_t padStateIndex = board - 1;
+      #else
+      const uint8_t padStateIndex = board;
       #endif
-      uint8_t changed = previousBoardPadStates ^ boardPadStates;
-      previousPadStates[padStateIndex] = boardPadStates;
-      #ifdef USART_DEBUG_ENABLED
-      Serial.print("Ch: ");
-      Serial.println(changed);
-      #endif
-      if (changed) {
-        for (uint8_t i = 0; i < 4; ++i) {
-          uint8_t padMask = (1 << i);
-          if (changed & padMask) {
-            uint8_t pinState = (boardPadStates & padMask) ? 1 : 0;
-            // TODO: add type for pad -> easier to tell button events apart in the handler
-            handler(board, CONTROL_TYPE_BUTTON, i, pinState);
+      const uint8_t boardPadStates = padStates[padStateIndex];
+      const uint8_t previousBoardPadStates = previousPadStates[padStateIndex];
+      if (previousBoardPadStates != boardPadStates) {
+        #ifdef USART_DEBUG_ENABLED
+        Serial.print("B: ");
+        Serial.println(board);
+        #endif
+        uint8_t changed = previousBoardPadStates ^ boardPadStates;
+        previousPadStates[padStateIndex] = boardPadStates;
+        #ifdef USART_DEBUG_ENABLED
+        Serial.print("Ch: ");
+        Serial.println(changed);
+        #endif
+        if (changed) {
+          for (uint8_t i = 0; i < 4; ++i) {
+            uint8_t padMask = (1 << i);
+            if (changed & padMask) {
+              Serial.println("CHNG");
+              uint8_t pinState = (boardPadStates & padMask) ? 1 : 0;
+              // TODO: add type for pad -> easier to tell button events apart in the handler
+              handler(board, CONTROL_TYPE_BUTTON, i, pinState);
+            }
           }
         }
       }
     }
   }
 #endif
-
-#endif // PCB_VERSION != 3
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_POT)
   for (int i = 0; i < BOARD_COUNT; ++i) {
@@ -218,6 +213,7 @@ void Slave_::update() {
       if (BOARD_FEATURES[i] & BOARD_FEATURE_POT) {
         // Resolution restricted to 7-bits for MIDI compatibility
         position = analogRead(POT_PINS[i]) >> 3;
+        // TODO: Compare raw values!
         positionChanged = position != positions[i] && (position == 0 || position == 127 || POT_CHANGE_THRESHOLD < abs(positions[i] - position));
       }
 
@@ -243,6 +239,7 @@ void Slave_::update() {
         positionChanged = position != 0;
       }
 
+/*
       #if defined(USART_DEBUG_ENABLED) && defined(INTERRUPT_DEBUG)
       uint8_t stateA = digitalRead(ENCODER_PINS[i][0]);
       uint8_t stateB = digitalRead(ENCODER_PINS[i][1]);
@@ -259,7 +256,7 @@ void Slave_::update() {
         states[2*i] = stateA;
         states[2*i+1] = stateB;
       }
-      #endif
+      #endif*/
     } else {
       continue;
     }
@@ -286,6 +283,7 @@ void Slave_::update() {
 }
 
 void Slave_::sendMessageToMaster(byte input, uint16_t value, ControlType type) {
+  Serial.println("SND");
   SlaveToMasterMessage message = {address, input, type, value};
   sendMessageToMaster(message);
 }
@@ -296,6 +294,7 @@ void Slave_::sendMessageToMaster(SlaveToMasterMessage& message) {
   Wire.write(data, SlaveToMasterMessageSize);
   Wire.endTransmission();
 }
+
 
 [[gnu::pure]] Board Slave_::firstBoardInLedChain(Board board) {
   return (Board) (board - (board % 2));
@@ -315,8 +314,12 @@ void Slave_::setLedPosition(Board board, byte position) {
   initializeLedsForBoard(board);
   fillLeds(Color(0, 0, 0), 0, ledCountForChain(board));
   const Board firstBoard = firstBoardInLedChain(board);
-  setPositionLedOn(getPosition(firstBoard), firstBoard);
-  setPositionLedOn(getPosition(firstBoard+1), firstBoard+1);
+  // TODO: Get position overrules the position from argument?
+  //setPositionLedOn(getPosition(firstBoard), firstBoard);
+  //setPositionLedOn(getPosition(firstBoard+1), firstBoard+1);
+  // TODO: Implement support for absolute encoders? I.e. store position on device rather than change leds according to midi input? => conf?
+  setPositionLedOn(position, firstBoard);
+  setPositionLedOn(position, (Board) (((byte) firstBoard) + 1));
   showLeds();
 #endif
 }
@@ -324,6 +327,7 @@ void Slave_::setLedPosition(Board board, byte position) {
 inline void Slave_::setPositionLedOn(uint8_t position, Board board) {
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
   const uint8_t firstIndex = board % 2 == 0 ? 0 : LED_COUNTS[board - 1];
+  // TODO: Does this work properly if there are leds on either the first or the second board?
   setLedColor(position + firstIndex, colorForPosition(position));
 #endif
 }
@@ -333,7 +337,8 @@ void Slave_::setLedValue(Board board, byte position, byte value) {
   initializeLedsForBoard(board);
   const Board firstBoard = firstBoardInLedChain(board);
   setPositionLedOn(getPosition(firstBoard), firstBoard);
-  setPositionLedOn(getPosition(firstBoard+1), firstBoard+1);
+  const Board nextBoard = (Board) (firstBoard + 1);
+  setPositionLedOn(getPosition(nextBoard), nextBoard);
   showLeds();
 #endif
 }
@@ -341,7 +346,7 @@ void Slave_::setLedValue(Board board, byte position, byte value) {
 
 MasterToSlaveMessage Slave_::readMessage() {
   byte input = Wire.read();
-  byte type = Wire.read();
+  ControlType type = (ControlType) Wire.read();
   byte valueHighByte = Wire.read();
   byte valueLowByte = Wire.read();
 
@@ -349,11 +354,13 @@ MasterToSlaveMessage Slave_::readMessage() {
   return message;
 }
 
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
 void Slave_::setEncoderPosition(Board board, byte position) {
   (*(encoders)[board]).setPosition(position);
 }
+#endif
 
-void Slave_::handleMessageFromMaster() {
+void Slave_::handleMessageFromMaster(int bytes) {
   Slave.toggleBuiltinLed();
 
   MasterToSlaveMessage message = Slave.readMessage();
@@ -361,11 +368,25 @@ void Slave_::handleMessageFromMaster() {
   const ControlType type = message.type;
   const uint8_t input = message.input;
 
-  if (type == CONTROL_TYPE_POSITION || type == CONTROL_TYPE_POSITION) {
+  #ifdef USART_DEBUG_ENABLED
+    Serial.print("I");
+    Serial.print(input);
+    Serial.print("T");
+    Serial.print(type);
+    Serial.print("V");
+    Serial.println(value);
+  #endif
+
+  // Perhaps an ACK would be nice?
+  //Slave.sendMessageToMaster(DEBUG_VALUE, value, CONTROL_TYPE_DEBUG);
+
+  if (type == CONTROL_TYPE_POSITION) {
     if (BOARD_FEATURES[input] & BOARD_FEATURE_ENCODER) {
       // TODO: apply limits
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
       Slave.setEncoderPosition((Board) input, value);
-      Slave.setLedPosition((Board) input, value);
+#endif
+      Slave.setLedPosition((Board) input, value * 13 / 127);
     }
   }
 
@@ -447,30 +468,17 @@ inline void Slave_::setupInterrupts() {
   }
 #endif
 
-if (BOARD_FEATURES[BOARD_R1] & (BOARD_FEATURE_BUTTON | BOARD_FEATURE_TOUCH)) {
-  enablePCINT(SWR);
-}
-
-#if PCB_VERSION != 3 // TODO
-  if (BOARD_FEATURES[BOARD_L1] & BOARD_FEATURE_PADS) {
-    enablePCINT(SWL);
-    enablePCINT(ENCL1A);
-    enablePCINT(ENCL1B);
-    enablePCINT(ENCL2A);
-  }
-
-  if (BOARD_FEATURES[BOARD_M] & BOARD_FEATURE_PADS) {
-    enablePCINT(SWM);
-    enablePCINT(ENC1B);
-    enablePCINT(ENC1A);
-    enablePCINT(TOUCH); // TODO: fix  POT -> TOUCH on board
-  }
-
-  if (BOARD_FEATURES[BOARD_R1] & BOARD_FEATURE_PADS) {
-    enablePCINT(ENCR1A);
-    enablePCINT(ENCR1B);
-    enablePCINT(ENCR2A);
+  if (BOARD_FEATURES[BOARD_R1] & (BOARD_FEATURE_BUTTON | BOARD_FEATURE_TOUCH)) {
     enablePCINT(SWR);
+  }
+
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
+  for (byte board = 0; board < BOARD_COUNT; ++board) {
+    if (BOARD_FEATURES[board] & BOARD_FEATURE_PADS) {
+      for (byte i = 0; i < 4; ++i) {
+        enablePCINT(PAD_PINS[board][i]);
+      }
+    }
   }
 #endif
 }
@@ -494,6 +502,7 @@ inline void Slave_::setupPinModes() {
         digitalWrite(pin, HIGH);
       }
       for (uint8_t input = 0; input < MATRIX_INPUTS; ++input) {
+        // TODO: Why boot + 2?
         sendMessageToMaster(DEBUG_BOOT + 2, BOARD_MATRIX_INDEX(i), input);
         pinMode(BUTTON_MATRIX_INPUT_PINS[BOARD_MATRIX_INDEX(i)][input], INPUT_PULLUP);
       }
@@ -525,7 +534,6 @@ inline void Slave_::setupPinModes() {
 #endif
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
-#if PCB_VERSION != 3 // TODO
     if (BOARD_FEATURES[i] & BOARD_FEATURE_PADS) {
       for (uint8_t j = 0; j < 4; ++j) {
         #ifdef USART_DEBUG_ENABLED
@@ -536,8 +544,14 @@ inline void Slave_::setupPinModes() {
       }
     }
 #endif
-#endif
   }
+
+#ifdef USART_DEBUG_ENABLED
+  Serial.print("PCM0: ");
+  Serial.println(PCMSK0);
+  Serial.print("PCM2: ");
+  Serial.println(PCMSK2);
+#endif
 }
 
 inline uint8_t Slave_::requestAddress() {
@@ -600,7 +614,7 @@ inline void Slave_::setupI2c() {
   #endif
 }
 
-#if PCB_VERSION != 3 // TODO
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
 inline uint8_t Slave_::readPadPin(uint8_t board, uint8_t pin) {
   #ifdef USART_DEBUG_ENABLED
   Serial.print("Read: ");
@@ -612,9 +626,18 @@ inline uint8_t Slave_::readPadPin(uint8_t board, uint8_t pin) {
 }
 
 inline void Slave_::updatePadStates() {
-  for (uint8_t board = 1; board < 4; ++board) { // Pads and buttons not available on leftmost and rightmost boards
+  #if PCB_VERSION != 3
+  uint8_t firstBoard = 1; // Pads and buttons not available on leftmost and rightmost boards
+  #else
+  uint8_t firstBoard = BOARD_L1;
+  #endif
+  for (uint8_t board = firstBoard; board < BOARD_COUNT - 1 ; ++board) {
     if (BOARD_FEATURES[board] & BOARD_FEATURE_PADS) {
+      #if PCB_VERSION != 3
       const uint8_t padStateIndex = board - 1;
+      #else
+      const uint8_t padStateIndex = board;
+      #endif
       padStates[padStateIndex] = readPadPin(board, 3) | readPadPin(board, 2) | readPadPin(board, 1) | readPadPin(board, 0);
       #ifdef USART_DEBUG_ENABLED
       Serial.print("BOARD PADS ");
@@ -623,7 +646,7 @@ inline void Slave_::updatePadStates() {
       Serial.println(padStates[padStateIndex]);
       #endif
     }
-  }
+  } 
 }
 #endif
 
@@ -746,7 +769,12 @@ void Slave_::fillLeds(uint32_t color, uint16_t first, uint16_t count) {
 void Slave_::showLeds() {
   leds->show();
 }
+#endif
 
+#if defined(USART_DEBUG_ENABLED) && defined(INTERRUPT_DEBUG)
+void Slave_::setInterrupter(byte i) {
+  interrupter = i;
+}
 #endif
 
 Slave_ Slave;

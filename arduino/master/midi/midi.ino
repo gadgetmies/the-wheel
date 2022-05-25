@@ -22,14 +22,16 @@ void setup() {
   nextAddress = nextAddress == 255 ? 0 : nextAddress;
 
   Serial.begin(115200);
-  Wire.begin(MASTER_ADDRESS); // join i2c bus (address optional for master)
+  Wire.begin(MASTER_ADDRESS);
 
+  Serial.println("Reading addresses from EEPROM");
   for (byte i = 0; i < CHANNEL_COUNT; ++i) {
     byte address = EEPROM.read(i+1);
     if (address == 255) break;
 
     addressToMidiChannels[i] = address;
     nextAddressIndex++;
+    Serial.println(address);
   }
 
   Wire.onRequest(sendAddress);
@@ -64,12 +66,13 @@ void loop() {
   midiEventPacket_t rx = MidiUSB.read();
 
   if (rx.header != 0) {
-    uint8_t slaveAddress = rx.byte1 & 0xF;
+    uint8_t slaveAddress = addressToMidiChannels[rx.byte1 & 0xF];
     ControlType type = rx.header == 0x9 || rx.header == 0x8 ? CONTROL_TYPE_BUTTON : CONTROL_TYPE_POSITION;
-    MasterToSlaveMessage message = {rx.byte2, type, byte3};
+    MasterToSlaveMessage message = {rx.byte2, type, rx.byte3};
+    Serial.println(slaveAddress);
     Wire.beginTransmission(slaveAddress);
     byte data[] = {message.input, (byte)message.type, highByte(message.value), lowByte(message.value)};
-    Wire.write(data, SlaveToMasterMessageSize);
+    Wire.write(data, MasterToSlaveMessageSize);
     Wire.endTransmission();
   }
 }
@@ -150,21 +153,30 @@ void handleControlChange() {
   Serial.print(input);
   Serial.print(", Type: ");
   Serial.print(type);
+  Serial.print(", Position: ");
+  Serial.print(CONTROL_TYPE_POSITION);
   Serial.print(", Value: ");
   Serial.println(value);
 
-  if (type == CONTROL_TYPE_DEBUG && value == DEBUG_BOOT) {
-    saveAddressAsNextChannel(address); // TODO: slaves do not send their address at boot :facepalm:
-  }
-  if (type == CONTROL_TYPE_POSITION || type == CONTROL_TYPE_ENCODER) {
+  
+  if (type == CONTROL_TYPE_DEBUG) {
+    if (value == DEBUG_BOOT) {
+      saveAddressAsNextChannel(address); // TODO: slaves do not send their address at boot :facepalm:
+    } else if (value == DEBUG_VALUE) {
+      Serial.print("Got value from slave: ");
+      Serial.println();
+    }
+  } else if (type == CONTROL_TYPE_POSITION || type == CONTROL_TYPE_ENCODER) {
     byte channel = findChannelForAddress(address);
     if (channel == ADDRESS_NOT_FOUND) {
       channel = nextAddressIndex;
       saveAddressAsNextChannel(address);
     }
+    Serial.println("Sending CC");
     controlChange(channel, input, value == 1 ? 1 : 127);
-  }
-  if (type == CONTROL_TYPE_BUTTON) {
+  } else if (type == CONTROL_TYPE_BUTTON) {
+    Serial.println("Sending note");
+    
     byte channel = findChannelForAddress(address);
     if (channel == ADDRESS_NOT_FOUND) {
       channel = nextAddressIndex;
