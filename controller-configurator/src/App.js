@@ -2,6 +2,35 @@ import './App.css'
 import { useEffect, useState } from 'react'
 import useEventListener from '@use-it/event-listener'
 
+import controller0 from './img/controller0.png'
+import controller90 from './img/controller90.png'
+import controller180 from './img/controller180.png'
+import controller270 from './img/controller270.png'
+import encoder0 from './img/encoder0.png'
+import encoder90 from './img/encoder90.png'
+import encoder180 from './img/encoder180.png'
+import encoder270 from './img/encoder270.png'
+import encoder_with_leds0 from './img/encoder_with_leds0.png'
+import encoder_with_leds90 from './img/encoder_with_leds90.png'
+import encoder_with_leds180 from './img/encoder_with_leds180.png'
+import encoder_with_leds270 from './img/encoder_with_leds270.png'
+import slider0 from './img/slider0.png'
+import slider90 from './img/slider90.png'
+import slider180 from './img/slider180.png'
+import slider270 from './img/slider270.png'
+import crossfader0 from './img/crossfader0.png'
+import crossfader90 from './img/crossfader90.png'
+import crossfader180 from './img/crossfader180.png'
+import crossfader270 from './img/crossfader270.png'
+import pot0 from './img/pot0.png'
+import pot90 from './img/pot90.png'
+import pot180 from './img/pot180.png'
+import pot270 from './img/pot270.png'
+import pad0 from './img/pad0.png'
+import pad90 from './img/pad90.png'
+import pad180 from './img/pad180.png'
+import pad270 from './img/pad270.png'
+
 const useMousePosition = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   useEffect(() => {
@@ -33,8 +62,8 @@ const items = [
     type: 'controller',
     name: 'Controller',
     width: 4,
-    height: 4,
-    src: { 0: '/controller0.png', 90: '/controller90.png', 180: '/controller180.png', 270: '/controller270.png' },
+    height: 3,
+    src: { 0: controller0, 90: controller90, 180: controller180, 270: controller270 },
     connectors: [
       { available: true, position: { left: 0, top: 80 }, accepts: 'any' },
       { available: true, position: { right: 0, top: 20 }, accepts: 'any' },
@@ -49,7 +78,7 @@ const items = [
     name: 'Encoder',
     width: 5,
     height: 4,
-    src: { 0: '/encoder0.png', 90: '/encoder90.png', 180: '/encoder180.png', 270: '/encoder270.png' },
+    src: { 0: encoder0, 90: encoder90, 180: encoder180, 270: encoder270 },
     connectors: [
       { available: true, position: { left: 0, top: 50 } },
       { available: true, position: { right: 0, top: 50 }, accepts: 'encoder' },
@@ -64,10 +93,10 @@ const items = [
     width: 6,
     height: 6,
     src: {
-      0: '/encoder_with_leds0.png',
-      90: '/encoder_with_leds90.png',
-      180: '/encoder_with_leds180.png',
-      270: '/encoder_with_leds270.png',
+      0: encoder_with_leds0,
+      90: encoder_with_leds90,
+      180: encoder_with_leds180,
+      270: encoder_with_leds270,
     },
     connectors: [
       { available: true, position: { left: 0, top: 50 } },
@@ -86,7 +115,7 @@ const items = [
     name: 'Slider',
     width: 6,
     height: 4,
-    src: { 0: '/slider0.png', 90: '/slider90.png', 180: '/slider180.png', 270: '/slider270.png' },
+    src: { 0: slider0, 90: slider90, 180: slider180, 270: slider270 },
     connectors: [{ available: true, position: { left: 0, top: 50 } }],
     properties: analogProperties,
     orientations: [0, 90, 180, 270],
@@ -97,7 +126,7 @@ const items = [
     name: 'Crossfader',
     width: 9,
     height: 4,
-    src: { 0: '/crossfader0.png', 90: '/crossfader90.png', 180: '/crossfader180.png', 270: '/crossfader270.png' },
+    src: { 0: crossfader0, 90: crossfader90, 180: crossfader180, 270: crossfader270 },
     connectors: [{ available: true, position: { left: 0, top: 50 } }],
     properties: analogProperties,
     orientations: [0, 90, 180, 270],
@@ -108,7 +137,7 @@ const items = [
     name: 'Pot',
     width: 5,
     height: 4,
-    src: { 0: '/pot0.png', 90: '/pot90.png', 180: '/pot180.png', 270: '/pot270.png' },
+    src: { 0: pot0, 90: pot90, 180: pot180, 270: pot270 },
     connectors: [{ available: true, position: { left: 0, top: 50 } }],
     properties: analogProperties,
     orientations: [0, 90, 180, 270],
@@ -119,7 +148,7 @@ const items = [
     name: 'Pad',
     width: 6,
     height: 6,
-    src: { 0: '/pad0.png', 90: '/pad90.png', 180: '/pad180.png', 270: '/pad270.png' },
+    src: { 0: pad0, 90: pad90, 180: pad180, 270: pad270 },
     connectors: [{ available: true, position: { left: 0, top: 50 } }],
     properties: analogProperties,
     orientations: [0, 90, 180, 270],
