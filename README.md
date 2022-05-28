@@ -20,6 +20,19 @@ keeping the BOM cost low.
 You can find a proof of concept programming jig / bed of nails tester
 for the microcontroller board here: https://a360.co/2ylXmQ3
 
+## Configurator
+
+There is a web app for configuring the controllers in the 
+controller-configurator folder. You can start it by running:
+```
+yarn
+yarn start
+```
+
+You need to have node and yarn installed in order to run the 
+configurator locally. You can also use the online version at:
+https://gadgetmies.github.com/encoder/
+
 ## Currently supported components and settings
 * Encoders
   * Absolute / Relative
