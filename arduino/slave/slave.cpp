@@ -139,13 +139,13 @@ void Slave_::update() {
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_TOUCH)
   if (previousTouchStates != touchStates) {
     #ifdef USART_DEBUG_ENABLED
-    Serial.print("TS: ");
+    Serial.print("TS:");
     Serial.println(touchStates);
     #endif
     uint8_t changed = previousTouchStates ^ touchStates;
     previousTouchStates = touchStates;
     #ifdef USART_DEBUG_ENABLED
-    Serial.print("Ch: ");
+    Serial.print("CH:");
     Serial.println(changed);
     #endif
     // TODO:
@@ -180,13 +180,13 @@ void Slave_::update() {
       const uint8_t previousBoardPadStates = previousPadStates[padStateIndex];
       if (previousBoardPadStates != boardPadStates) {
         #ifdef USART_DEBUG_ENABLED
-        Serial.print("B: ");
+        Serial.print("B:");
         Serial.println(board);
         #endif
         uint8_t changed = previousBoardPadStates ^ boardPadStates;
         previousPadStates[padStateIndex] = boardPadStates;
         #ifdef USART_DEBUG_ENABLED
-        Serial.print("Ch: ");
+        Serial.print("CH:");
         Serial.println(changed);
         #endif
         if (changed) {
@@ -211,10 +211,8 @@ void Slave_::update() {
       uint8_t positionChanged = false;
 
       if (BOARD_FEATURES[i] & BOARD_FEATURE_POT) {
-        // Resolution restricted to 7-bits for MIDI compatibility
-        position = analogRead(POT_PINS[i]) >> 3;
-        // TODO: Compare raw values!
-        positionChanged = position != positions[i] && (position == 0 || position == 127 || POT_CHANGE_THRESHOLD < abs(positions[i] - position));
+        position = analogRead(POT_PINS[i]);
+        positionChanged = position != positions[i] && (position == 0 || position == 1023 || POT_CHANGE_THRESHOLD < abs(positions[i] - position));
       }
 
       if (positionChanged) {
@@ -301,11 +299,9 @@ void Slave_::sendMessageToMaster(SlaveToMasterMessage& message) {
 }
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+// TODO: This should be overridable from slave.ino
 [[gnu::pure]] uint32_t Slave_::colorForPosition(uint8_t position) {
-  return position % 4 == 0 ? Slave.ColorHSV(0, UINT8_MAX, 20) :
-         position % 4 == 1 ? Slave.ColorHSV(UINT16_MAX / 4, UINT8_MAX, 20) :
-         position % 4 == 2 ? Slave.ColorHSV(UINT16_MAX / 4 * 2, UINT8_MAX, 20) :
-                             Slave.ColorHSV(UINT16_MAX / 4 * 3, UINT8_MAX, 20);
+  return Slave.ColorHSV(position << 10, UINT8_MAX, 20);
 }
 #endif
 
@@ -332,11 +328,30 @@ inline void Slave_::setPositionLedOn(uint8_t position, Board board) {
 #endif
 }
 
+inline void Slave_::setPositionLedOff(uint8_t position, Board board) {
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
+  const uint8_t firstIndex = board % 2 == 0 ? 0 : LED_COUNTS[board - 1];
+  // TODO: Does this work properly if there are leds on either the first or the second board?
+  setLedColor(position + firstIndex, Color(0, 0, 0));
+#endif
+}
+
 void Slave_::setLedValue(Board board, byte position, byte value) {
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_LED)
   initializeLedsForBoard(board);
   const Board firstBoard = firstBoardInLedChain(board);
-  setPositionLedOn(getPosition(firstBoard), firstBoard);
+
+// TODO: these ifdefs should be removed
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER)
+  if (BOARD_FEATURES[board] & BOARD_FEATURE_ENCODER) {
+    setPositionLedOn(getPosition(firstBoard), firstBoard);
+  }
+#endif
+#if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
+  if (BOARD_FEATURES[board] & BOARD_FEATURE_PADS) {
+    setPositionLedOn(position, firstBoard);
+  }
+#endif  
   const Board nextBoard = (Board) (firstBoard + 1);
   setPositionLedOn(getPosition(nextBoard), nextBoard);
   showLeds();
@@ -393,7 +408,12 @@ void Slave_::handleMessageFromMaster(int bytes) {
   if (type == CONTROL_TYPE_BUTTON) {
     if (BOARD_FEATURES[input] & BOARD_FEATURE_PADS) {
       // TODO: implement value handling (perhaps high byte for pad number and low byte for color?)
-      Slave.setLedValue((Board) input, value, 0);
+      //Slave.setLedValue((Board) input, value, 0);
+      if (value == 0) {
+        Slave.setPositionLedOff(lowByte(value), (Board) input);
+      } else {
+        Slave.setPositionLedOn(lowByte(value), (Board) input);
+      }
     }
   }
 }
@@ -502,6 +522,8 @@ inline void Slave_::setupPinModes() {
         digitalWrite(pin, HIGH);
       }
       for (uint8_t input = 0; input < MATRIX_INPUTS; ++input) {
+        // TODO: try commenting this out. Perhaps the communication would then work?
+        // Might it be that the master receives events from traktor and the messages between slave and master crash?
         // TODO: Why boot + 2?
         sendMessageToMaster(DEBUG_BOOT + 2, BOARD_MATRIX_INDEX(i), input);
         pinMode(BUTTON_MATRIX_INPUT_PINS[BOARD_MATRIX_INDEX(i)][input], INPUT_PULLUP);
@@ -537,7 +559,7 @@ inline void Slave_::setupPinModes() {
     if (BOARD_FEATURES[i] & BOARD_FEATURE_PADS) {
       for (uint8_t j = 0; j < 4; ++j) {
         #ifdef USART_DEBUG_ENABLED
-        Serial.print("Configuring pin as input: ");
+        Serial.print("CFG INPUT: ");
         Serial.println(PAD_PINS[i][j]);
         #endif
         pinMode(PAD_PINS[i][j], INPUT_PULLUP);
@@ -568,7 +590,7 @@ inline uint8_t Slave_::requestAddress() {
 
   if (receivedAddress == 255) {
     #ifdef USART_DEBUG_ENABLED
-    Serial.println("Did not get addr. Reset.");
+    Serial.println("NOADDR.RST");
     #endif
     delay(1000);
     reset();
@@ -581,19 +603,19 @@ inline void Slave_::setupI2c() {
   address = EEPROM.read(0);
   #ifdef USART_DEBUG_ENABLED
   Serial.println("Boot");
-  Serial.print("A: ");
+  Serial.print("A:");
   Serial.println(address);
   #endif
 
  if (address == 255 || address <= MASTER_ADDRESS) {
     #ifdef USART_DEBUG_ENABLED
-    Serial.println("Req addr from master");
+    Serial.println("ADDR REQ");
     #endif
     Wire.begin();
     address = requestAddress();
 
     #ifdef USART_DEBUG_ENABLED
-    Serial.print("Start w/ addr: ");
+    Serial.print("S W/ ADDR:");
     Serial.println(address);
     #endif
     Wire.begin(address);
@@ -617,9 +639,9 @@ inline void Slave_::setupI2c() {
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_PADS)
 inline uint8_t Slave_::readPadPin(uint8_t board, uint8_t pin) {
   #ifdef USART_DEBUG_ENABLED
-  Serial.print("Read: ");
+  Serial.print("P:");
   Serial.println(PAD_PINS[board][pin]);
-  Serial.print("Val: ");
+  Serial.print("V:");
   Serial.println(digitalRead(PAD_PINS[board][pin]));
   #endif
   return (digitalRead(PAD_PINS[board][pin]) == LOW ? 0 : 1) << pin;
@@ -640,9 +662,9 @@ inline void Slave_::updatePadStates() {
       #endif
       padStates[padStateIndex] = readPadPin(board, 3) | readPadPin(board, 2) | readPadPin(board, 1) | readPadPin(board, 0);
       #ifdef USART_DEBUG_ENABLED
-      Serial.print("BOARD PADS ");
+      Serial.print("B:");
       Serial.println(board);
-      Serial.print("States: ");
+      Serial.print("STS:");
       Serial.println(padStates[padStateIndex]);
       #endif
     }

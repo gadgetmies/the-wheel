@@ -5,12 +5,15 @@
 
 #include "shared.h"
 
+// #define USART_DEBUG_ENABLED // This will slow down MIDI message receiving -> disable on 
+
 volatile byte nextAddress;
-volatile byte nextAddressIndex = 0;
+volatile byte nextChannel = 0;
 
 const byte CHANNEL_COUNT = 15;
 const byte ADDRESS_NOT_FOUND = CHAR_MAX;
-volatile byte addressToMidiChannels[CHANNEL_COUNT];
+volatile byte midiChannelToAddress[CHANNEL_COUNT];
+const byte MIDI_CHANNEL_EEPROM_ADDRESS_OFFSET = 1;
 
 const uint8_t SS1Pin = 4;
 
@@ -29,8 +32,8 @@ void setup() {
     byte address = EEPROM.read(i+1);
     if (address == 255) break;
 
-    addressToMidiChannels[i] = address;
-    nextAddressIndex++;
+    midiChannelToAddress[i] = address;
+    nextChannel = findNextAvailableChannel();
     Serial.println(address);
   }
 
@@ -66,21 +69,32 @@ void loop() {
   midiEventPacket_t rx = MidiUSB.read();
 
   if (rx.header != 0) {
-    uint8_t slaveAddress = addressToMidiChannels[rx.byte1 & 0xF];
+    uint8_t slaveAddress = midiChannelToAddress[rx.byte1 & 0xF];
     ControlType type = rx.header == 0x9 || rx.header == 0x8 ? CONTROL_TYPE_BUTTON : CONTROL_TYPE_POSITION;
     MasterToSlaveMessage message = {rx.byte2, type, rx.byte3};
-    Serial.println(slaveAddress);
     Wire.beginTransmission(slaveAddress);
     byte data[] = {message.input, (byte)message.type, highByte(message.value), lowByte(message.value)};
     Wire.write(data, MasterToSlaveMessageSize);
     Wire.endTransmission();
+    
+#ifdef USART_DEBUG_ENABLED
+    Serial.println("Got MIDI message:");
+    Serial.print("Header: ");
+    Serial.println(rx.header);
+    Serial.print("Slave:");
+    Serial.println(slaveAddress);
+    Serial.print("Type:");
+    Serial.println(message.type);
+    Serial.print("Value");
+    Serial.println(message.value);
+#endif
   }
 }
 
 void printChannels() {
   for (byte i = 0; i < CHANNEL_COUNT; ++i) {
     Serial.print("Restored ");
-    Serial.print(addressToMidiChannels[i]);
+    Serial.print(midiChannelToAddress[i]);
     Serial.print(" to index ");
     Serial.println(i);
   }
@@ -120,25 +134,39 @@ SlaveToMasterMessage readMessage() {
 
 byte findChannelForAddress(byte address) {
   for (byte i = 0; i < CHANNEL_COUNT; ++i) {
-    if (addressToMidiChannels[i] == address) return i;
+    if (midiChannelToAddress[i] == address) return i;
   }
 
   return ADDRESS_NOT_FOUND;
+}
+
+byte findNextAvailableChannel() {
+  nextChannel = (nextChannel + 1) % CHANNEL_COUNT;
+
+  if (findChannelForAddress(nextChannel) == ADDRESS_NOT_FOUND) {
+    return nextChannel;
+  } else {
+    return findNextAvailableChannel;
+  }
 }
 
 void saveAddressAsNextChannel(byte address) {
   Serial.print("Storing ");
   Serial.print(address);
   Serial.print(" to index ");
-  Serial.println(nextAddressIndex);
+  Serial.println(nextChannel);
 
-  addressToMidiChannels[nextAddressIndex] = address;
-  EEPROM.write(nextAddressIndex+1, address);
-  nextAddressIndex++;
+  midiChannelToAddress[nextChannel] = address;
+  EEPROM.write(nextChannel + MIDI_CHANNEL_EEPROM_ADDRESS_OFFSET, address);
+  nextChannel = findNextAvailableChannel();
 }
 
-void handleControlChange() {
+void handleControlChange(int bytes) {
   toggleRxLed();
+  Serial.print("Received ");
+  Serial.print(bytes);
+  Serial.println(" bytes");
+  
   Serial.println("Received event:");
 
   SlaveToMasterMessage message = readMessage();
@@ -147,6 +175,7 @@ void handleControlChange() {
   const uint8_t input = message.input;
   const uint8_t address = message.address;
 
+#ifdef USART_DEBUG_ENABLED
   Serial.print("Address: ");
   Serial.print(address);
   Serial.print(", Control: ");
@@ -157,32 +186,42 @@ void handleControlChange() {
   Serial.print(CONTROL_TYPE_POSITION);
   Serial.print(", Value: ");
   Serial.println(value);
+#endif
 
-  
   if (type == CONTROL_TYPE_DEBUG) {
     if (value == DEBUG_BOOT) {
       saveAddressAsNextChannel(address); // TODO: slaves do not send their address at boot :facepalm:
     } else if (value == DEBUG_VALUE) {
+#ifdef USART_DEBUG_ENABLED
       Serial.print("Got value from slave: ");
       Serial.println();
+#endif
     }
-  } else if (type == CONTROL_TYPE_POSITION || type == CONTROL_TYPE_ENCODER) {
-    byte channel = findChannelForAddress(address);
-    if (channel == ADDRESS_NOT_FOUND) {
-      channel = nextAddressIndex;
-      saveAddressAsNextChannel(address);
-    }
+  }  
+
+  byte channel = findChannelForAddress(address);
+  if (channel == ADDRESS_NOT_FOUND) {
+    channel = nextChannel;
+    saveAddressAsNextChannel(address);
+    Serial.print("Channel for address not found, using:");
+    Serial.println(channel);
+  }
+  
+  if (type == CONTROL_TYPE_POSITION) {
+#ifdef USART_DEBUG_ENABLED
     Serial.println("Sending CC");
+#endif
+    // Scale value to 7 bits for MIDI
+    controlChange(channel, input, value >> 3);
+  } else if (type == CONTROL_TYPE_ENCODER) {
+#ifdef USART_DEBUG_ENABLED
+    Serial.println("Sending CC");
+#endif
     controlChange(channel, input, value == 1 ? 1 : 127);
   } else if (type == CONTROL_TYPE_BUTTON) {
+#ifdef USART_DEBUG_ENABLED
     Serial.println("Sending note");
-    
-    byte channel = findChannelForAddress(address);
-    if (channel == ADDRESS_NOT_FOUND) {
-      channel = nextAddressIndex;
-      saveAddressAsNextChannel(address);
-    }
-
+#endif
     if (value == 1) {
       noteOn(channel, input, 127);
     } else {
@@ -192,12 +231,14 @@ void handleControlChange() {
 }
 
 void controlChange(byte channel, byte control, byte value) {
+#ifdef USART_DEBUG_ENABLED
   Serial.print("Sending CC: channel: ");
   Serial.print(channel);
   Serial.print(", control: ");
   Serial.print(control);
   Serial.print(", value: ");
   Serial.println(value);
+#endif
 
   midiEventPacket_t event = {0x0B, 0xB0 | channel, control, value};
   MidiUSB.sendMIDI(event);
@@ -205,12 +246,14 @@ void controlChange(byte channel, byte control, byte value) {
 }
 
 void noteOn(byte channel, byte pitch, byte velocity) {
+#ifdef USART_DEBUG_ENABLED
   Serial.print("Sending NoteOn: channel: ");
   Serial.print(channel);
   Serial.print(", pitch: ");
   Serial.print(pitch);
   Serial.print(", velocity: ");
   Serial.println(velocity);
+#endif
 
   midiEventPacket_t noteOn = {0x09, 0x90 | channel, pitch, velocity};
   MidiUSB.sendMIDI(noteOn);
@@ -218,12 +261,14 @@ void noteOn(byte channel, byte pitch, byte velocity) {
 }
 
 void noteOff(byte channel, byte pitch, byte velocity) {
+#ifdef USART_DEBUG_ENABLED
   Serial.print("Sending NoteOff: channel: ");
   Serial.print(channel);
   Serial.print(", pitch: ");
   Serial.print(pitch);
   Serial.print(", velocity: ");
   Serial.println(velocity);
+#endif
 
   midiEventPacket_t noteOff = {0x08, 0x80 | channel, pitch, velocity};
   MidiUSB.sendMIDI(noteOff);

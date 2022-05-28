@@ -14,7 +14,7 @@ void sendChangeMessage(byte input, uint16_t value, ControlType type) {
   Slave.sendMessageToMaster(input, value, type);
 }
 
-void handleChange(Board board, ControlType type, uint8_t input, uint8_t state) {
+void handleChange(Board board, ControlType type, uint8_t input, int state) {
   switch (type) {
     // TODO: prevent input collisions on different boards
     case CONTROL_TYPE_POSITION: {

@@ -118,7 +118,7 @@ const items = [
     ],
     properties: [
       { id: 'ledCount', name: 'LED count', type: 'number', min: 1, value: 15 },
-      { id: 'color', name: 'LED color', type: 'color', value: '#ff0000' },
+      //{ id: 'color', name: 'LED color', type: 'color', value: '#ff0000' },
       ...encoderProperties,
     ],
     orientations: [0],
@@ -718,6 +718,7 @@ function App() {
                 return
               }
             }
+
             const newItems = designItems.slice()
             newItems.push(newItem)
             setDesignItems(newItems)

@@ -94,7 +94,9 @@ private:
   Board firstBoardInLedChain(Board board);
   void setLedPosition(Board board, byte position);
   void setLedValue(Board board, byte position, byte value);
+  // TODO: Combine and fix argument order
   inline void setPositionLedOn(uint8_t position, Board board);
+  inline void setPositionLedOff(uint8_t position, Board board);
   uint8_t ledCountForBoard(Board board);
   uint8_t ledPinForBoard(Board board);
   uint8_t firstLedIndex(Board board);
@@ -207,7 +209,9 @@ private:
     0
     #endif
   };
+  #endif
 
+  #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_ENCODER) || ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_POT)
   int positions[BOARD_COUNT]  = {
     0,
     0,
@@ -262,7 +266,7 @@ static const uint8_t BUTTON_PINS[] = {
 #endif
 
 #if ANY_BOARD_HAS_FEATURE(BOARD_FEATURE_POT)
-static const uint8_t POT_CHANGE_THRESHOLD = 5;
+static const uint8_t POT_CHANGE_THRESHOLD = 10;
 
 #if PCB_VERSION != 3
 static const uint8_t POT_PINS[] = {
