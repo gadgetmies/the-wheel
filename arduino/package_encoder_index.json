@@ -1,12 +1,12 @@
 {
   "packages": [
     {
-      "name": "encoder",
+      "name": "the-wheel",
       "maintainer": "Gadgetmies",
       "websiteURL": "http://gadgetmies.ddns.net/",
       "email": "gadgetmies@gmail.com",
       "help": {
-        "online": "https://github.com/gadgetmies/encoder"
+        "online": "https://github.com/gadgetmies/the-wheel"
       },
       "platforms": [
         {
@@ -15,9 +15,9 @@
           "version": "1.1.3",
           "category": "Contributed",
           "help": {
-            "online": "https://github.com/gadgetmies/encoder"
+            "online": "https://github.com/gadgetmies/the-wheel"
           },
-          "url": "https://github.com/gadgetmies/encoder/releases/download/v1.1.3/encoder-1.1.3.zip",
+          "url": "https://github.com/gadgetmies/the-wheel/releases/download/v1.1.3/encoder-1.1.3.zip",
           "archiveFileName": "encoder-1.1.3.zip",
           "checksum": "SHA-256:f1269641e1446a90c3aa920dbf70c2bfd18e8f616be5f90150d3fbcadad9f222",
           "size": "190634",
