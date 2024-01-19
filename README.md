@@ -59,7 +59,7 @@ yarn start
 
 You need to have node and yarn installed in order to run the 
 configurator locally. You can also use the online version at:
-https://gadgetmies.github.com/encoder/
+https://gadgetmies.github.com/the-wheel/
 
 ## Project status
 * If you would like to use the designs and the code in your project, please add a issue to this repository
