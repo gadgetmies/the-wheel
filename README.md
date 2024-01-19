@@ -1,3 +1,5 @@
+<img src="the-wheel.png" align="right" style="width: 50%"/>
+
 # The Wheel: A library for modular interfaces
 
 ## Purpose
