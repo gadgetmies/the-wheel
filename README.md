@@ -1,4 +1,4 @@
-# Interface module for modular controllers
+# The Wheel: A library for modular interfaces
 
 ## Purpose
 Build physical user interfaces without reinventing The Wheel, i.e. compile
