@@ -1,6 +1,6 @@
 <img src="the-wheel.png" align="right" style="width: 50%"/>
 
-# The Wheel: A library for modular interfaces
+# The Wheel: Modular interface platform
 
 ## Purpose
 Build physical user interfaces without reinventing The Wheel, i.e. compile
